@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Slides — 影片转投影片</title>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #252840;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #2d3354;
+    --radius: 12px;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 顶部导航 */
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo { font-size: 1.4rem; }
+  .navbar h1 { font-size: 1.1rem; font-weight: 700; }
+  .navbar h1 span { color: var(--accent); }
+  .nav-links { margin-left: auto; display: flex; gap: 8px; }
+  .nav-link {
+    padding: 6px 14px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  .nav-link:hover { color: var(--text); }
+
+  /* Hero */
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: rgba(108, 99, 255, 0.15);
+    border: 1px solid rgba(108, 99, 255, 0.3);
+    color: #a5a0ff;
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+  }
+  .hero h2 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #fff 30%, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    max-width: 500px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+
+  /* 表单卡片 */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 640px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text-muted); }
+
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .advanced-toggle {
+    font-size: 0.85rem;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    margin-bottom: 16px;
+    display: inline-block;
+    user-select: none;
+  }
+  .advanced-panel { display: none; }
+  .advanced-panel.open { display: block; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), #9088ff);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    font-size: 0.9rem;
+  }
+
+  /* 历史记录 */
+  .history-section {
+    max-width: 640px;
+    width: 100%;
+    margin-top: 40px;
+  }
+  .history-title {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .history-item:hover { border-color: var(--accent); }
+  .hist-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .hist-status.completed { background: #22c55e; }
+  .hist-status.failed { background: var(--danger); }
+  .hist-status.pending, .hist-status.processing { background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .hist-info { flex: 1; overflow: hidden; }
+  .hist-title { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+  .hist-action {
+    font-size: 0.8rem;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* 功能说明 */
+  .features {
+    display: flex;
+    gap: 20px;
+    max-width: 640px;
+    width: 100%;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+  .feature-icon { font-size: 1rem; }
+</style>
+</head>
+<body x-data="app()" x-init="init()">
+
+<nav class="navbar">
+  <span class="logo">🎬</span>
+  <h1>YouTube <span>Slides</span></h1>
+  <div class="nav-links">
+    <a href="/" class="nav-link">首页</a>
+  </div>
+</nav>
+
+<main class="hero">
+  <div class="hero-badge">✨ 影片 → 投影片</div>
+  <h2>将 YouTube 影片<br>转为静态投影片</h2>
+  <p>字幕驱动截帧，自动提取关键画面，生成可离线阅读的 HTML 投影片。</p>
+
+  <!-- 表单 -->
+  <div class="form-card">
+    <form @submit.prevent="submit()">
+      <div class="field">
+        <label>YouTube 影片网址</label>
+        <input
+          type="text"
+          x-model="form.url"
+          placeholder="https://www.youtube.com/watch?v=..."
+          autocomplete="off"
+          spellcheck="false"
+        >
+      </div>
+
+      <span class="advanced-toggle" @click="showAdvanced = !showAdvanced">
+        <span x-text="showAdvanced ? '▲ 收起进阶设定' : '▼ 进阶设定'"></span>
+      </span>
+
+      <div class="advanced-panel" :class="{ open: showAdvanced }">
+        <div class="fields-grid">
+          <div class="field">
+            <label>影片画质</label>
+            <select x-model="form.video_quality">
+              <option value="best">最高画质</option>
+              <option value="1080p">1080p</option>
+              <option value="720p">720p（推荐）</option>
+              <option value="480p">480p（较快）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>字幕语言</label>
+            <select x-model="form.subtitle_langs">
+              <option value="zh-Hans,zh,en">中文优先</option>
+              <option value="en,zh-Hans">英文优先</option>
+              <option value="zh-Hans">仅中文</option>
+              <option value="en">仅英文</option>
+              <option value="ja,en">日文优先</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>字幕翻译（可选）</label>
+            <select x-model="form.translate_target">
+              <option value="">不翻译</option>
+              <option value="zh-CN">翻译为中文</option>
+              <option value="en">翻译为英文</option>
+              <option value="ja">翻译为日文</option>
+              <option value="ko">翻译为韩文</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>图片质量（<span x-text="form.image_quality"></span>）</label>
+            <input type="range" min="30" max="95" step="5" x-model.number="form.image_quality">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" :disabled="loading || !form.url.trim()">
+        <span x-show="!loading">🚀 开始转换</span>
+        <span x-show="loading">处理中...</span>
+      </button>
+    </form>
+
+    <div class="error-msg" x-show="error" x-text="error"></div>
+  </div>
+
+  <!-- 功能特点 -->
+  <div class="features">
+    <div class="feature"><span class="feature-icon">📷</span> 字幕驱动截帧</div>
+    <div class="feature"><span class="feature-icon">📄</span> 单 HTML 离线阅读</div>
+    <div class="feature"><span class="feature-icon">🌐</span> 多语言字幕翻译</div>
+    <div class="feature"><span class="feature-icon">⌨️</span> 键盘导航支持</div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div class="history-section" x-show="history.length > 0">
+    <div class="history-title">
+      <span>📋 最近任务</span>
+      <span style="margin-left:auto; cursor:pointer; color: var(--accent)" @click="clearHistory()">清除</span>
+    </div>
+    <div class="history-list">
+      <template x-for="job in history" :key="job.id">
+        <a :href="`/job/${job.id}`" class="history-item">
+          <div class="hist-status" :class="getStatusClass(job.status)"></div>
+          <div class="hist-info">
+            <div class="hist-title" x-text="job.title || job.url"></div>
+            <div class="hist-meta" x-text="`${statusLabel(job.status)} · ${formatDate(job.created_at)}`"></div>
+          </div>
+          <span class="hist-action" x-show="job.status === 'completed'">查看 →</span>
+        </a>
+      </template>
+    </div>
+  </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script>
+function app() {
+  return {
+    form: {
+      url: "",
+      video_quality: "best",
+      subtitle_langs: "zh-Hans,zh,en",
+      translate_target: "",
+      image_quality: 75,
+    },
+    showAdvanced: false,
+    loading: false,
+    error: "",
+    history: [],
+
+    init() {
+      this.loadHistory();
+      // 从 URL 参数读取预填 URL（如重试失败跳转时）
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get("url");
+      if (urlParam) this.form.url = urlParam;
+    },
+
+    async submit() {
+      this.error = "";
+      const url = this.form.url.trim();
+      if (!url) return;
+      if (!/youtube\.com\/watch|youtu\.be\/|youtube\.com\/shorts/.test(url)) {
+        this.error = "请输入有效的 YouTube 网址（youtube.com 或 youtu.be）";
+        return;
+      }
+
+      this.loading = true;
+      try {
+        const job = await api.createJob(this.form);
+        // 保存到历史记录
+        this.saveHistory(job);
+        // 跳转到任务进度页
+        window.location.href = `/job/${job.id}`;
+      } catch (e) {
+        this.error = e.message;
+        this.loading = false;
+      }
+    },
+
+    loadHistory() {
+      try {
+        this.history = JSON.parse(localStorage.getItem("yt_jobs") || "[]");
+      } catch { this.history = []; }
+    },
+
+    saveHistory(job) {
+      this.history.unshift(job);
+      if (this.history.length > 10) this.history = this.history.slice(0, 10);
+      localStorage.setItem("yt_jobs", JSON.stringify(this.history));
+    },
+
+    clearHistory() {
+      this.history = [];
+      localStorage.removeItem("yt_jobs");
+    },
+
+    getStatusClass(status) {
+      if (status === "completed") return "completed";
+      if (status === "failed") return "failed";
+      return "processing";
+    },
+
+    statusLabel(status) {
+      const map = {
+        pending: "等待中",
+        fetching_metadata: "获取信息",
+        downloading_video: "下载影片",
+        downloading_subtitles: "下载字幕",
+        parsing_subtitles: "解析字幕",
+        translating: "翻译字幕",
+        extracting_frames: "提取帧",
+        optimizing_images: "优化图片",
+        building_slides: "生成投影片",
+        completed: "已完成",
+        failed: "失败",
+      };
+      return map[status] || status;
+    },
+
+    formatDate(dateStr) {
+      try {
+        return new Date(dateStr).toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+      } catch { return ""; }
+    },
+  };
+}
+</script>
+</body>
+</html>

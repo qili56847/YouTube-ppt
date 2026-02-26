@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>处理中 — YouTube Slides</title>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #252840;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #2d3354;
+    --radius: 12px;
+    --success: #22c55e;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo { font-size: 1.4rem; }
+  .navbar h1 { font-size: 1.1rem; font-weight: 700; }
+  .navbar h1 span { color: var(--accent); }
+  .back-btn {
+    margin-left: auto;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .job-header { margin-bottom: 32px; }
+  .job-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+  .job-url {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 进度环 */
+  .progress-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  .ring-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+  .ring-svg {
+    transform: rotate(-90deg);
+  }
+  .ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 10;
+  }
+  .ring-fill {
+    fill: none;
+    stroke: url(#ringGradient);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+  }
+  .ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .ring-pct {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .ring-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* 阶段列表 */
+  .stages { margin-bottom: 28px; }
+  .stage-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    transition: color 0.3s;
+  }
+  .stage-item:last-child { border-bottom: none; }
+  .stage-icon { width: 24px; text-align: center; flex-shrink: 0; }
+  .stage-name { flex: 1; }
+  .stage-pct { font-size: 0.8rem; color: var(--text-muted); }
+  .stage-item.done { color: var(--success); }
+  .stage-item.active { color: var(--text); font-weight: 500; }
+  .stage-item.waiting { color: var(--text-muted); }
+
+  /* 状态消息 */
+  .status-msg {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    min-height: 1.5em;
+    margin-bottom: 24px;
+  }
+
+  /* 完成按钮区 */
+  .result-area { text-align: center; }
+  .result-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--success); }
+  .result-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; }
+  .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #9088ff); color: #fff; }
+  .btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+  .btn:hover { opacity: 0.85; }
+
+  /* 错误状态 */
+  .error-area { text-align: center; }
+  .error-icon { font-size: 2rem; margin-bottom: 12px; }
+  .error-title { font-size: 1.1rem; font-weight: 600; color: var(--danger); margin-bottom: 8px; }
+  .error-msg { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; word-break: break-all; }
+
+  /* 缩略图预览 */
+  .thumbnail {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: block;
+  }
+</style>
+</head>
+<body x-data="app()" x-init="init()">
+
+<nav class="navbar">
+  <span class="logo">🎬</span>
+  <h1>YouTube <span>Slides</span></h1>
+  <a href="/" class="back-btn">← 返回首页</a>
+</nav>
+
+<main class="main">
+  <div class="card">
+
+    <!-- 影片信息 -->
+    <div class="job-header" x-show="job">
+      <img class="thumbnail" x-show="job.thumbnail" :src="job.thumbnail" alt="" x-cloak>
+      <div class="job-title" x-text="job.title || '处理中...'"></div>
+      <div class="job-url" x-text="job.url"></div>
+    </div>
+
+    <!-- 进度中 -->
+    <template x-if="!isDone && !isFailed">
+      <div>
+        <!-- 进度环 -->
+        <div class="progress-ring-wrap">
+          <div class="ring-container">
+            <svg class="ring-svg" width="160" height="160" viewBox="0 0 160 160">
+              <defs>
+                <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#6c63ff"/>
+                  <stop offset="100%" stop-color="#ff6584"/>
+                </linearGradient>
+              </defs>
+              <circle class="ring-bg" cx="80" cy="80" r="70"/>
+              <circle class="ring-fill" cx="80" cy="80" r="70"
+                :stroke-dasharray="`${2 * Math.PI * 70}`"
+                :stroke-dashoffset="`${2 * Math.PI * 70 * (1 - progress / 100)}`"
+              />
+            </svg>
+            <div class="ring-text">
+              <div class="ring-pct" x-text="progress + '%'"></div>
+              <div class="ring-label">处理中</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 阶段指示 -->
+        <div class="stages">
+          <template x-for="stage in stages" :key="stage.key">
+            <div class="stage-item" :class="stageClass(stage)">
+              <span class="stage-icon" x-text="stageIcon(stage)"></span>
+              <span class="stage-name" x-text="stage.label"></span>
+              <span class="stage-pct" x-show="currentStage === stage.key" x-text="progress + '%'"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- 状态消息 -->
+        <div class="status-msg" x-text="message || '准备中...'"></div>
+      </div>
+    </template>
+
+    <!-- 完成 -->
+    <template x-if="isDone">
+      <div class="result-area">
+        <div class="result-title">✅ 投影片生成完成！</div>
+        <div class="result-sub" x-text="`共 ${job.slide_count || 0} 张投影片`"></div>
+        <div class="btn-group">
+          <a :href="`/viewer/${job.id}`" class="btn btn-primary">📺 在线查看</a>
+          <a :href="`/api/jobs/${job.id}/download`" class="btn btn-secondary" download>💾 下载 HTML</a>
+          <a href="/" class="btn btn-secondary">🏠 返回首页</a>
+        </div>
+      </div>
+    </template>
+
+    <!-- 失败 -->
+    <template x-if="isFailed">
+      <div class="error-area">
+        <div class="error-icon">❌</div>
+        <div class="error-title">处理失败</div>
+        <div class="error-msg" x-text="job.error || '发生未知错误'"></div>
+        <div class="btn-group">
+          <button class="btn btn-primary" @click="retry()">🔄 重新尝试</button>
+        </div>
+      </div>
+    </template>
+
+  </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/sse.js"></script>
+<script>
+function app() {
+  return {
+    job: null,
+    progress: 0,
+    message: "",
+    currentStage: "pending",
+    isDone: false,
+    isFailed: false,
+    sse: null,
+
+    stages: [
+      { key: "fetching_metadata",      label: "获取影片信息",  range: [0, 10] },
+      { key: "downloading_video",       label: "下载影片",      range: [10, 50] },
+      { key: "downloading_subtitles",   label: "下载字幕",      range: [50, 60] },
+      { key: "parsing_subtitles",       label: "解析字幕",      range: [60, 63] },
+      { key: "transcribing",            label: "语音转录",      range: [63, 65] },
+      { key: "translating",             label: "翻译字幕",      range: [65, 70] },
+      { key: "extracting_frames",       label: "提取关键帧",    range: [70, 85] },
+      { key: "optimizing_images",       label: "优化图片",      range: [85, 90] },
+      { key: "building_slides",         label: "生成投影片",    range: [90, 100] },
+    ],
+
+    async init() {
+      // 从 URL 获取 job_id
+      const jobId = parseInt(window.location.pathname.split("/").pop());
+      if (!jobId) { window.location.href = "/"; return; }
+
+      try {
+        this.job = await api.getJob(jobId);
+        this.progress = this.job.progress || 0;
+        this.message = this.job.message || "";
+        this.currentStage = this.job.status;
+
+        if (this.job.status === "completed") {
+          this.isDone = true;
+          return;
+        }
+        if (this.job.status === "failed") {
+          this.isFailed = true;
+          return;
+        }
+
+        // 建立 SSE 连接
+        this.sse = new SSEClient(jobId, {
+          onProgress: (data) => this.onProgress(data),
+          onComplete: (data) => this.onComplete(data),
+          onError: (err) => this.onError(err),
+        });
+        this.sse.connect();
+      } catch (e) {
+        console.error(e);
+      }
+    },
+
+    onProgress(data) {
+      this.progress = data.progress || this.progress;
+      this.message = data.message || this.message;
+      this.currentStage = data.status;
+      if (data.title) this.job.title = data.title;
+      if (data.thumbnail) this.job.thumbnail = data.thumbnail;
+    },
+
+    async onComplete(data) {
+      this.progress = 100;
+      this.isDone = true;
+      // 重新获取最新任务信息
+      try {
+        this.job = await api.getJob(this.job.id);
+      } catch {}
+    },
+
+    onError(err) {
+      this.isFailed = true;
+      if (this.job) this.job.error = err;
+    },
+
+    async retry() {
+      if (!this.job?.url) { window.location.href = "/"; return; }
+      try {
+        const newJob = await api.createJob({ url: this.job.url });
+        window.location.href = `/job/${newJob.id}`;
+      } catch (e) {
+        window.location.href = `/?url=${encodeURIComponent(this.job.url)}`;
+      }
+    },
+
+    stageClass(stage) {
+      const stages = this.stages.map(s => s.key);
+      const currentIdx = stages.indexOf(this.currentStage);
+      const stageIdx = stages.indexOf(stage.key);
+      if (stageIdx < currentIdx || this.isDone) return "done";
+      if (stage.key === this.currentStage) return "active";
+      return "waiting";
+    },
+
+    stageIcon(stage) {
+      const stages = this.stages.map(s => s.key);
+      const currentIdx = stages.indexOf(this.currentStage);
+      const stageIdx = stages.indexOf(stage.key);
+      if (this.isDone || stageIdx < currentIdx) return "✅";
+      if (stage.key === this.currentStage) return "⏳";
+      return "⭕";
+    },
+  };
+}
+</script>
+</body>
+</html>

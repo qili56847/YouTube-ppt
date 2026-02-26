@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# 运行时数据（含下载的影片与生成的投影片）
+data/
+
+# 环境变量（含敏感配置）
+.env
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
