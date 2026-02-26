@@ -1,21 +1,32 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
+*.egg-info/
 build/
 dist/
 wheels/
-*.egg-info
 
-# Virtual environments
-.venv
+# Virtual environment
+.venv/
+venv/
 
-# 运行时数据（含下载的影片与生成的投影片）
+# Environment variables
+.env
+*.env
+
+# Sensitive files
+cookies.txt
+
+# Claude Code
+.claude/
+
+# Runtime data
 data/
 
-# 环境变量（含敏感配置）
-.env
+# Logs
+*.log
 
-# 编辑器
+# IDE
 .vscode/
 .idea/
 *.swp
