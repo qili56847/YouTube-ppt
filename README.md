@@ -152,3 +152,7 @@ for s in segs[:10]: print(f'[{s.start:.1f}-{s.end:.1f}s] {s.text}')
 ## License
 
 MIT
+
+## 贡献
+
+欢迎提交 Issue 反馈问题，或通过 Pull Request 贡献代码。
